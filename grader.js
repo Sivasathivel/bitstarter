@@ -27,6 +27,50 @@ var cheerio = require('cheerio');
 var HTMLFILE_DEFAULT = "index.html";
 var CHECKSFILE_DEFAULT = "checks.json";
 
+
+//SAKTHI1
+var DOWNLOAD_DEFAULT = "downloaded.html";
+var sys = require('util');
+var http = require('http');
+var https = require('https');
+var url = require('url');
+var qs = require('querystring');
+//var multipart = require('./multipartform');
+var zlib = null;
+var Iconv = null;
+var exec = require('child_process').exec;
+var spawn = require('child_process').spawn;
+/*
+try {
+  zlib = require('zlib');
+} catch (err) {}
+
+try {
+  Iconv = require('iconv').Iconv;
+} catch (err) {}
+*/
+var file_download = function(file_URL) {
+    console.log(file_URL + "\n");
+    var fName = url.parse(file_URL).pathname.split('/').pop();
+    console.log(fName + "\n");
+    fName = fName || DOWNLOAD_DEFAULT;
+    console.log(fName + "\n");
+    var file  = fs.createWriteStream(fName);
+    var curl_cmd = spawn('curl',[file_URL]);
+    curl_cmd.stdout.on('data',function(data) { file.write(data);});
+    curl_cmd.stdout.on('end',function(data) {
+	file.end();
+	console.log(fName + "has been downloaded");
+	});
+    curl_cmd.on('exit', function(code) {
+	if(code != 0) {
+	    console.log('Failed: ' + code);
+	    }
+	});
+    return fName;
+}
+
+
 var assertFileExists = function(infile) {
     var instr = infile.toString();
     if(!fs.existsSync(instr)) {
@@ -65,8 +109,15 @@ if(require.main == module) {
     program
         .option('-f, --file <html_file>', 'Path to index.html', clone(assertFileExists), HTMLFILE_DEFAULT)
         .option('-c, --checks <check_file>', 'Path to checks.json', clone(assertFileExists), CHECKSFILE_DEFAULT)
+        .option('-u, --url <url_file>', 'URL to index.html',DOWNLOAD_DEFAULT)
         .parse(process.argv);
-    var checkJson = checkHtmlFile(program.file, program.checks);
+    
+    if(!program.file) {
+	console.log(program.url);
+	var checkJson = checkHtmlFile(file_download(program.url), program.checks);
+	} else {
+	    var checkJson = checkHtmlFile(program.file, program.checks);
+	    }
     var outJson = JSON.stringify(checkJson, null, 4);
     console.log(outJson);
 } else {
